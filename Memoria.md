@@ -61,11 +61,55 @@ Siguiendo los sucesivos pasos que veremos a continuación, específicamente, a l
 
 Aunque el mejor lugar para ver la guía de instalación (de cualquier software) siempre es su [página oficial](http://wiki.ros.org/kinetic/Installation/Ubuntu), voy a intentar sintetizar el procedimiento y hacerlo lo más sencillo posible.
 
+1. Dar permiso a todos los tipos de repositorios de Ubuntu (_main, universe, restricted y multiverse_). Esto lo podemos hacer desde la aplicación de _Software y Actualizaciones_.
+Para ver los pasos más detalladamente podemos consultar esta [página](https://help.ubuntu.com/community/Repositories/Ubuntu).
+
+2. Hacer que nuestro equipo (VM) acepte paquetes desde _packages.ros.org_.
+>sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+
+3. Obtenemos las claves de encriptado para ROS.
+>sudo apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654  
+
+4. Nos aseguramos que tenemos los repositorios de Debian actualizados
+>sudo apt-get update
+
+5. Instalamos la versión _kinetic-desctop-full_
+>sudo apt-get install ros-kinetic-desktop-full
+
+6. Inicializamos _rosdep_ que nos permite instalar dependencias y es necesario para el funcionamiento de ciertos componentes de ROS.
+>sudo rosdep init
+rosdep update
+
+7. Permitimos que todas las variables y todos los ajustes de ROS carguen cada vez que iniciamos una nueva consola.
+>echo "source /opt/ros/kinetic/setup.bash" >> ~/.bashrc
+source ~/.bashrc
+
+8. Instalamos ciertas dependencias que nos permitirán crear y gestionar nuestros propios espacios de trabajo.
+>sudo apt install python-rosinstall python-rosinstall-generator python-wstool build-essential
+
+Con todo esto listo ya tendremos ROS completamente instalado y listo para funcionar.
+
+## 3. Instalar bebop_autonomy
+
+## 4. Instalar video_stream_opencv
+
+Para añadir web cam a la VM instalar Virtual Box Extension Pack, seleccionar interfaz usb 2.0 en la configuración de la VM, ejecutar:
+>VBoxManage list webcams  
+
+desde el directorio raíz. Seleccionar la webcam a importar con:  
+
+>VBoxManage controlvm "_nombre de la VM_" webcam attach .X  
+
+Para realizar todo esto es importante que figuremos como miembro del grupo vboxusers.
+
 ### 
 
 # Conclusiones
 
 # Referencias
 
-[Web oficial ROS](http://wiki.ros.org/es) - [http://wiki.ros.org/es](http://wiki.ros.org/es)  
-[Bebop Autonomy](https://bebop-autonomy.readthedocs.io/en/latest/index.html) - [https://bebop-autonomy.readthedocs.io/en/latest/index.html](https://bebop-autonomy.readthedocs.io/en/latest/index.html)
+[Web oficial ROS](http://wiki.ros.org/es)
+[Bebop Autonomy](https://bebop-autonomy.readthedocs.io/en/latest/index.html)
+[Video Stream OpenCV](http://wiki.ros.org/video_stream_opencv)  
+[CV Camera](http://wiki.ros.org/cv_camera)  
+[Ubuntu Help - habilitar repositorios](https://help.ubuntu.com/community/Repositories/Ubuntu)  
