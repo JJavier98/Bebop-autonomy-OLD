@@ -77,7 +77,7 @@ Para ver los pasos más detalladamente podemos consultar esta [página](https://
 >sudo apt-get install ros-kinetic-desktop-full
 
 6. Inicializamos _rosdep_ que nos permite instalar dependencias y es necesario para el funcionamiento de ciertos componentes de ROS.
->sudo rosdep init
+>sudo rosdep init  
 rosdep update
 
 7. Permitimos que todas las variables y todos los ajustes de ROS carguen cada vez que iniciamos una nueva consola.
