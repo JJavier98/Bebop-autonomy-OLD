@@ -46,6 +46,16 @@ titlepage-text-color: 110406
 
 # Desarrollo del proyecto
 
+## 0. Problemas
+
+- Falta de espacio de almacenamiento en la máquina virtual y disco duro en general. Abandono de la VM para instalar Ubuntu 16.04 como sistema anfitrión.
+
+- ROS no funciona con Python3 y Python2.7 ha dejado de tener soporte por lo que hay herramientas necesarias que no pueden ser instaladas. En un principio he desactivado la activación de ROS al iniciar el SO y trabajo con python3 antes de volver a activarlo.
+
+- Los algoritmos de traking vienes preparados con una demo. No sé como pasar las entradas de vídeo a estos algoritmos.
+
+- El algoritmo de detección no usa tensorflow 2.x solo tensorflow 1.x.
+
 ## 1. Ubuntu 16.04 - Máquina Virtual
 
 En primer lugar, crearemos una **máquina virtual (VM)** con la imagen de **Ubuntu 16.04**, ya que es la versión de Ubuntu que más soporte ofrece para **ROS (Robotic Operating System)**.
