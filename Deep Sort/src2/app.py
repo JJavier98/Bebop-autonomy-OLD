@@ -14,6 +14,7 @@ prototxt = '../detector_data/MobileNetSSD_deploy.prototxt'
 caffemodel = '../detector_data/MobileNetSSD_deploy.caffemodel'
 thresshold = 0.2
 start_time = 0
+n_frame = 0
 
 # Labels of Network.
 classNames = { 0: 'background',
@@ -42,9 +43,8 @@ def run(path, res, track_interval=5, display=True):
 
     video = ThreadedVideoStreamer(path, res)
     video_info = get_video_infomation(str(path), video.fps, video.res, video)
-    
-    
 
+    # Inicializamos el tracker y el extractor de caracteristicas
     obj_tracker = ObjTracker()
     feat_extractor = FeatureExtractor("../encoder/mars-small128.pb")
 
@@ -71,7 +71,7 @@ def run(path, res, track_interval=5, display=True):
         #print(obj_tracker.get_confirmed_tracks())
 
         #print("Tiempo total " + str(n_frame) + ": " + str(time.time()-start_time))
-
+        
     vis = Visualizer(video_info) if display else NoViewerVisualizer(video_info)
     vis.run(frame_callback)
 
@@ -154,3 +154,4 @@ def detection(frame):
     #cv2.imshow("frame", frame)
 
     return (centroids, bboxes)
+

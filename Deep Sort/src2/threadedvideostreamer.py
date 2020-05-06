@@ -22,8 +22,8 @@ class ThreadedVideoStreamer(object):
         return self
 
     def update(self):
+    	count2 = 0
         # keep looping infinitely
-        #count = 0
         while True:
             # if the thread indicator variable is set, stop the
             # thread
@@ -32,18 +32,22 @@ class ThreadedVideoStreamer(object):
 
             # otherwise, ensure the queue has room in it
             if not self.Q.full():
-                # read the next frame from the file
-                count = self.stream.get(1)
-                (grabbed, frame) = self.stream.read()
+				print(self.path)
+				(grabbed, frame) = self.stream.read()
+				if self.path != 0:
+					# read the next frame from the file
+					count = self.stream.get(1)
 
-                # if the `grabbed` boolean is `False`, then we have
-                # reached the end of the video file
-                if not grabbed:
-                    self.stop()
-                    return
-                # add the frame to the queue
-                self.Q.put((cv.resize(frame, self.res), int(count-1)))
-                #count +=1
+					# if the `grabbed` boolean is `False`, then we have
+					# reached the end of the video file
+					if not grabbed:
+						self.stop()
+						return
+					# add the frame to the queue
+					self.Q.put((cv.resize(frame, self.res), int(count-1)))
+				else:
+					self.Q.put((cv.resize(frame, self.res), int(count2-1)))
+					count2+=1
 
     def read(self):
         # return next (n_frame, frame) in the queue
