@@ -14,6 +14,7 @@ prototxt = '../detector_data/MobileNetSSD_deploy.prototxt'
 caffemodel = '../detector_data/MobileNetSSD_deploy.caffemodel'
 thresshold = 0.2
 start_time = 0
+n_frame = 0
 
 # Labels of Network.
 classNames = { 0: 'background',
@@ -40,40 +41,38 @@ def get_video_infomation(path, fps, res, str):
 
 def run(path, res, track_interval=5, display=True):
 
-    video = ThreadedVideoStreamer(path, res)
-    video_info = get_video_infomation(str(path), video.fps, video.res, video)
-    
-    
+	video = ThreadedVideoStreamer(path, res)
+	video_info = get_video_infomation(str(path), video.fps, video.res, video)
 
-    obj_tracker = ObjTracker()
-    feat_extractor = FeatureExtractor("../encoder/mars-small128.pb")
+	# Inicializamos el tracker y el extractor de caracteristicas
+	obj_tracker = ObjTracker()
+	feat_extractor = FeatureExtractor("../encoder/mars-small128.pb")
 
-    video.start()
-    time.sleep(1)
+	video.start()
+	time.sleep(1)
 
-    def frame_callback(vis):
+	def frame_callback(vis):
 
-        detection_centroids = []
-        detection_bboxes = []
+		detection_centroids = []
+		detection_bboxes = []
+		
+		frame, n_frame = video.read()
+		(detection_centroids, detection_bboxes) = detection(frame)
 
-        (frame, n_frame) = video.read()
+		features = feat_extractor.extract_features(frame, np.copy(detection_bboxes))
+		obj_tracker.update(detection_bboxes, detection_centroids, features)
 
-        (detection_centroids, detection_bboxes) = detection(frame)
-
-        features = feat_extractor.extract_features(frame, np.copy(detection_bboxes))
-        obj_tracker.update(detection_bboxes, detection_centroids, features)
-
-        if display:
-            vis.set_image(frame)
-            vis.draw_tracks(obj_tracker.get_confirmed_tracks())
-            vis.draw_detections(detection_bboxes)
-            
-        #print(obj_tracker.get_confirmed_tracks())
-
-        #print("Tiempo total " + str(n_frame) + ": " + str(time.time()-start_time))
-
-    vis = Visualizer(video_info) if display else NoViewerVisualizer(video_info)
-    vis.run(frame_callback)
+		if display:
+			vis.set_image(frame)
+			vis.draw_tracks(obj_tracker.get_confirmed_tracks())
+			vis.draw_detections(detection_bboxes)
+	
+		#print(obj_tracker.get_confirmed_tracks())
+		#print("Tiempo total " + str(n_frame) + ": " + str(time.time()-start_time))
+	
+	
+	vis = Visualizer(video_info) if display else NoViewerVisualizer(video_info)
+	vis.run(frame_callback)
 
 
 def detection(frame):
@@ -154,3 +153,4 @@ def detection(frame):
     #cv2.imshow("frame", frame)
 
     return (centroids, bboxes)
+

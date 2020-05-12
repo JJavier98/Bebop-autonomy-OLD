@@ -56,7 +56,7 @@ def run(path, res, track_interval=5, display=True):
         detection_centroids = []
         detection_bboxes = []
 
-        (frame, n_frame) = video.read()
+        frame, n_frame = video.read()
 
         (detection_centroids, detection_bboxes) = detection(frame)
 
@@ -68,9 +68,9 @@ def run(path, res, track_interval=5, display=True):
             vis.draw_tracks(obj_tracker.get_confirmed_tracks())
             vis.draw_detections(detection_bboxes)
             
-        #print(obj_tracker.get_confirmed_tracks())
+        print(obj_tracker.get_confirmed_tracks())
 
-        #print("Tiempo total " + str(n_frame) + ": " + str(time.time()-start_time))
+        print("Tiempo total " + str(n_frame) + ": " + str(time.time()-start_time))
         
     vis = Visualizer(video_info) if display else NoViewerVisualizer(video_info)
     vis.run(frame_callback)
