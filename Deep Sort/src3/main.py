@@ -25,4 +25,3 @@ if __name__ == '__main__':
 	display = args.display
 
 	app.run(path=path, res=res, track_interval=interval, display=display)
-	input('Hola buenos dias pedazos de desgraciados')
