@@ -4,6 +4,7 @@ from imgtracker import ImgTracker
 from objtracker import ObjTracker
 from visualizer import Visualizer, NoViewerVisualizer
 from extractfeatures import FeatureExtractor
+from reactivebebop import ReactiveBebop
 import os
 import cv2
 import numpy as np
@@ -46,8 +47,10 @@ def run(path, res, track_interval=5, display=True):
 
 	# Inicializamos el tracker y el extractor de caracteristicas
 	obj_tracker = ObjTracker()
+	reactive_bebop = ReactiveBebop()
 	feat_extractor = FeatureExtractor("../encoder/mars-small128.pb")
 
+	reactive_bebop.start()
 	video.start()
 	time.sleep(1)
 
@@ -61,14 +64,18 @@ def run(path, res, track_interval=5, display=True):
 
 		features = feat_extractor.extract_features(frame, np.copy(detection_bboxes))
 		obj_tracker.update(detection_bboxes, detection_centroids, features)
+		confirmed_tracks = obj_tracker.get_confirmed_tracks()
+		reactive_bebop.update_tracks(confirmed_tracks)
 
 		if display:
 			vis.set_image(frame)
-			vis.draw_tracks(obj_tracker.get_confirmed_tracks())
+			vis.draw_tracks(confirmed_tracks)
 			vis.draw_detections(detection_bboxes)
 	
 		#print(obj_tracker.get_confirmed_tracks())
 		#print("Tiempo total " + str(n_frame) + ": " + str(time.time()-start_time))
+		
+		return obj_tracker
 	
 	
 	vis = Visualizer(video_info) if display else NoViewerVisualizer(video_info)

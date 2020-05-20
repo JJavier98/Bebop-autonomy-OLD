@@ -1,7 +1,5 @@
 import app
-#import treatdataset
-#import trainhumanclassifiermodels
-#from threadedvideostreamer import ThreadedVideoStreamer
+import threading
 import cv2
 import os
 import argparse
@@ -17,11 +15,25 @@ parser.add_argument("--interval", default="3", help='cada cuantos frames se apli
 parser.add_argument("--display", default=True, help="Si True mostramos por pantalla los resultados del tracking")
 args = parser.parse_args()
 
+def run_app():
+
+	path = args.path
+	res = args.res
+	interval = args.interval
+	display = args.display
+	
+	app.run(path=path, res=res, track_interval=interval, display=display)
+
 if __name__ == '__main__':
 
 	path = args.path
 	res = args.res
 	interval = args.interval
 	display = args.display
-
+	
 	app.run(path=path, res=res, track_interval=interval, display=display)
+	
+	#t1 = threading.Thread(target=run_app, args=())
+	#t1.daemon = True
+	#t1.start()
+	
