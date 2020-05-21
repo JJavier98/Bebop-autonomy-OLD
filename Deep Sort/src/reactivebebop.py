@@ -8,15 +8,11 @@ except:
 	pass
 import rospy
 from std_msgs.msg import Empty
+from std_msgs.msg import Bool
 from geometry_msgs.msg import Twist
+from bebop_msgs.msg import CommonCommonStateBatteryStateChanged as Battery
 import termios
 import sys, tty
-    
-#-- Movimiento
-takeoff_pub = rospy.Publisher('/bebop/takeoff',Empty, queue_size=10)
-land_pub = rospy.Publisher('/bebop/land', Empty, queue_size=10)
-reset_pub = rospy.Publisher('/bebop/reset', Empty, queue_size=10)
-move_pub = rospy.Publisher('/bebop/cmd_vel', Twist, queue_size=10)
 
 #-- Lectura inmediata por teclado
 def getch():
@@ -31,8 +27,22 @@ def getch():
         return ch
     return _getch()
 
-def print_help():
-	print('[ ] Despega\n\
+class ReactiveBebop:
+	
+	def print_help(self, h_type):
+		if h_type==0: # Ayuda para menu
+			print('\n\n\n\
+[0] Modo manual \n\
+[1] Seleccionar target (solo funciona en modo automatico)\n\
+[2] Seleccionar velocidad [0.0 - 1.0]\n\
+[3] Empezar/Parar grabacion\n\
+[4] Mostrar % bateria\n\
+[p] Parada de emergencia\n\
+\n\n\n')
+
+		elif h_type==1: # Ayuda para movimiento
+			print('\n\n\n\
+[ ] Despega\n\
 [l] Aterrizar\n\
 [w] Avanza\n\
 [a] Desplaza izda\n\
@@ -45,25 +55,37 @@ def print_help():
 [5] Para\n\
 [e] Exit. Modo auto\n\
 [p] Parada de emergencia\n\
-[h] Help')
-
-class ReactiveBebop:
+[h] Help\n\
+\n\n\n')
 
 	def __init__(self, target=None, tracks=[], current_track=None):
 		self.target = target #id_track
 		self.tracks = tracks
 		self.current_track = current_track
-		self.min_x = 480.0
-		self.max_x = 800.0
+		self.min_x = 500.0 #480.0
+		self.max_x = 780.0 #800.0
 		self.min_y = 180.0
 		self.max_y = 540.0
 		self.auto = True
-		self.flying = False
 		self.vel = 0.2
-		self.max_dist_x = self.min_x#640.0
-		self.max_dist_y = 360.0
-		self.height = 60.0
-	
+		self.min_height = 40.0
+		self.max_height = 80.0
+		self.record = False
+		self.show_battery = False
+		self.battery = 'unknown'
+		
+		#-- Topics
+		self.takeoff_pub = rospy.Publisher('/bebop/takeoff',Empty, queue_size=1)
+		self.land_pub = rospy.Publisher('/bebop/land', Empty, queue_size=1)
+		self.reset_pub = rospy.Publisher('/bebop/reset', Empty, queue_size=1)
+		self.move_pub = rospy.Publisher('/bebop/cmd_vel', Twist, queue_size=1)
+		self.video_pub = rospy.Publisher('/bebop/record', Bool, queue_size=1)
+		self.battery_sub = rospy.Subscriber('/bebop/states/common/CommonState/BatteryStateChanged',Battery,self.battery_callback)
+
+	def battery_callback(self, data):
+		if not self.show_battery:
+			self.battery = str(data).split(' ')[-1]
+
 	def update_tracks(self, confirmed_tracks):
 		self.tracks=confirmed_tracks
 	
@@ -72,15 +94,11 @@ class ReactiveBebop:
 		
 	def move(self, moves=[]):
 		msg=Twist()
-		msg.linear.z = 0
-		msg.angular.z = 0
-		msg.linear.x = 0
-		msg.linear.y = 0
 		for move in moves:
 			if move==' ': # despegar
-				takeoff_pub.publish(Empty())
+				self.takeoff_pub.publish(Empty())
 			elif move=='l': # aterrizar
-				land_pub.publish(Empty())
+				self.land_pub.publish(Empty())
 			elif move=='w': # avanzar
 				msg.linear.x = self.vel
 			elif move=='a': # desplazar a la izda
@@ -105,11 +123,14 @@ class ReactiveBebop:
 			elif move=='e': # cambiar de modo
 				self.auto=True
 			elif move=='p': # parada de emergencia
-				reset_pub.publish(Empty())
+				self.reset_pub.publish(Empty())
 			elif move=='h': # ayuda
-				print_help()
-				
-		move_pub.publish(msg)
+				self.print_help(1)
+		
+		# Si no mandamos un mensaje cada 0.1s
+		# el dron detecta que hay un error
+		# y se mantiene estatico
+		self.move_pub.publish(msg)
 		
 	def follow_target(self):
 		time.sleep(2) # Damos tiempo a que carguen el resto de hebras
@@ -131,9 +152,9 @@ class ReactiveBebop:
 					elif centroid[1] > self.max_y:
 						moves.append('2')	
 					"""
-					if h < 40:
+					if h < self.min_height:
 						moves.append('w')
-					elif h > 80:
+					elif h > self.max_height:
 						moves.append('s')
 					
 					self.move(moves)
@@ -141,63 +162,80 @@ class ReactiveBebop:
 	def menu(self):
 		time.sleep(2) # Damos tiempo a que carguen el resto de hebras
 		while(True):
-			print('Press \'m\' to open menu: ')
+			time.sleep(0.1)
+			self.print_help(0) # Imprime ayuda menu
 			option = getch()
 			
-			if option=='m':
-				while(option!='0' and option!='1' and option!='2' and option!='p' and option!='b'):
-					print('[0] Cambiar a modo manual \n\
-[1] Seleccionar target (solo funciona en modo automatico)\n\
-[2] Seleccionar velocidad [0.0 - 1.0]\n\
-[p] Parada de emergencia\n\
-[b] Atras')
-					option = getch()
-					
-				if option=='0': # modo manual
-					self.auto = False
-					c=''
-					print_help() # Imprime ayuda
-					
-					while(c!='e'):
-						c=getch()
-						try:
-							self.move([c]) # Realiza movimiento 
-						except:
-							print('Tecla no valida')
-							self.move('h')
-						
-				elif option=='1': # Seleccion de target
-					ids = [t.id for t in self.tracks]
-					print('\'-1\'Exit.\n Select target: ')
-					new_target = input()
-					
-					while( (not new_target in ids) and new_target != -1):
-						print('Bad Target. Select one of this: ')
-						ids = [t.id for t in self.tracks]
-						print(ids)
-						print('\'-1\'Exit.\n Select target: ')
-						new_target = input()
-					
-					if new_target != -1:
-						self.target = new_target
-						self.current_track = [tr for tr in self.tracks if tr.id==new_target][0]
-						print('Target Updated')
-						print(self.current_track.bbox)
-					
-				elif option=='2': # Seleccion de velocidad
-					print('Indique nueva velocidad [0.0 - 1.0]: ')
+			while(option!='0' and option!='1' and option!='2' and option!='3' and option!='4' and option!='p'):
+				
+				option = getch()
+				
+			if option=='0': # modo manual
+				self.auto = False
+				c=''
+				self.print_help(1) # Imprime ayuda movimiento
+				
+				while(c!='e'):
+					c=getch()
 					try:
-						v = input()
-						if v>=0 and v<=1:
-							self.vel = v
-							print('Velocidad actualizada')
-						else:
-							print('Velocidad fuera de los limites')
+						self.move([c]) # Realiza movimiento 
 					except:
-						print('Error en la entrada de velocidad')		
+						print('Tecla no valida')
+						self.move('h')
 					
-				elif option=='p': # Parada de emergencia
-					self.move([option])
+			elif option=='1': # Seleccion de target
+				ids = [t.id for t in self.tracks]
+				print('\'-1\'Exit.\n Select target: ')
+				try:
+					new_target = input()
+				except:
+					new_target = -2
+				
+				while( (not new_target in ids) and new_target != -1):
+					print('Bad Target. Select one of this: ')
+					ids = [t.id for t in self.tracks]
+					print(ids)
+					print('\'-1\'Exit.\n Select target: ')
+					try:
+						new_target = input()
+					except:
+						new_target = -2
+				
+				if new_target != -1:
+					self.target = new_target
+					self.current_track = [tr for tr in self.tracks if tr.id==new_target][0]
+					print('Target Updated')
+					print(self.current_track.bbox)
+				
+			elif option=='2': # Seleccion de velocidad
+				print('Velocidad actual: '+str(self.vel)+'\nIndique nueva velocidad [0.0 - 1.0]: ')
+				try:
+					v = input()
+					if v>=0 and v<=1:
+						self.vel = v
+						print('Velocidad actualizada')
+					else:
+						print('Velocidad fuera de los limites')
+				except:
+					print('Error en la entrada de velocidad')
+				
+			elif option=='3': # Empezar/Parar grabacion
+				if not self.record:
+					self.record = True
+					self.video_pub.publish(True)
+					print('Ha comenzado la grabacion\n')
+				else:
+					self.record = False
+					self.video_pub.publish(False)
+					print('Se ha detenido la grabacion\n')
+				
+			elif option=='4': # Mostrar % bateria
+				self.show_battery = True
+				print('Bateria: '+self.battery+'%')
+				self.show_battery = False
+				
+			elif option=='p': # Parada de emergencia
+				self.move([option])
 	
 	def start(self):
 		self.b = threading.Thread(target=self.follow_target, args=())
