@@ -14,6 +14,8 @@ from bebop_msgs.msg import CommonCommonStateBatteryStateChanged as Battery
 import termios
 import sys, tty
 
+
+
 #-- Lectura inmediata por teclado
 def getch():
     def _getch():
@@ -73,6 +75,7 @@ class ReactiveBebop:
 		self.record = False
 		self.show_battery = False
 		self.battery = 'unknown'
+		self.aux1 = 0
 		
 		#-- Topics
 		self.takeoff_pub = rospy.Publisher('/bebop/takeoff',Empty, queue_size=1)
@@ -131,16 +134,16 @@ class ReactiveBebop:
 		# el dron detecta que hay un error
 		# y se mantiene estatico
 		self.move_pub.publish(msg)
-		
+	
 	def follow_target(self):
 		time.sleep(2) # Damos tiempo a que carguen el resto de hebras
 		while(True):
+			moves=[]
 			if self.auto and self.current_track != None:
 				if self.current_track.state == 2:
 					centroid = self.current_track.centroid_coor
 					bbox = self.current_track.bbox
 					h = bbox[2] # 0- x coord, 1- y coord, 2- height, 3- width
-					moves=[]
 					
 					if centroid[0] < self.min_x:
 						moves.append('4')
@@ -156,8 +159,8 @@ class ReactiveBebop:
 						moves.append('w')
 					elif h > self.max_height:
 						moves.append('s')
-					
-					self.move(moves)
+				
+			self.move(moves)
 		
 	def menu(self):
 		time.sleep(2) # Damos tiempo a que carguen el resto de hebras
@@ -167,7 +170,6 @@ class ReactiveBebop:
 			option = getch()
 			
 			while(option!='0' and option!='1' and option!='2' and option!='3' and option!='4' and option!='p'):
-				
 				option = getch()
 				
 			if option=='0': # modo manual
