@@ -75,14 +75,14 @@ class ReactiveBebop:
 		self.record = False
 		self.show_battery = False
 		self.battery = 'unknown'
-		self.aux1 = 0
+		self.aux=0
 		
 		#-- Topics
-		self.takeoff_pub = rospy.Publisher('/bebop/takeoff',Empty, queue_size=1)
-		self.land_pub = rospy.Publisher('/bebop/land', Empty, queue_size=1)
-		self.reset_pub = rospy.Publisher('/bebop/reset', Empty, queue_size=1)
-		self.move_pub = rospy.Publisher('/bebop/cmd_vel', Twist, queue_size=1)
-		self.video_pub = rospy.Publisher('/bebop/record', Bool, queue_size=1)
+		self.takeoff_pub = rospy.Publisher('/bebop/takeoff',Empty, queue_size=10)
+		self.land_pub = rospy.Publisher('/bebop/land', Empty, queue_size=10)
+		self.reset_pub = rospy.Publisher('/bebop/reset', Empty, queue_size=10)
+		self.move_pub = rospy.Publisher('/bebop/cmd_vel', Twist, queue_size=10)
+		self.video_pub = rospy.Publisher('/bebop/record', Bool, queue_size=10)
 		self.battery_sub = rospy.Subscriber('/bebop/states/common/CommonState/BatteryStateChanged',Battery,self.battery_callback)
 
 	def battery_callback(self, data):
@@ -97,6 +97,7 @@ class ReactiveBebop:
 		
 	def move(self, moves=[]):
 		msg=Twist()
+
 		for move in moves:
 			if move==' ': # despegar
 				self.takeoff_pub.publish(Empty())
@@ -133,7 +134,8 @@ class ReactiveBebop:
 		# Si no mandamos un mensaje cada 0.1s
 		# el dron detecta que hay un error
 		# y se mantiene estatico
-		self.move_pub.publish(msg)
+		if moves:
+			self.move_pub.publish(msg)
 	
 	def follow_target(self):
 		time.sleep(2) # Damos tiempo a que carguen el resto de hebras
@@ -159,6 +161,9 @@ class ReactiveBebop:
 						moves.append('w')
 					elif h > self.max_height:
 						moves.append('s')
+
+					if not moves:
+						moves.append('5')
 				
 			self.move(moves)
 		
